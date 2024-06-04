@@ -1,0 +1,71 @@
+[
+   {
+      "type":"section",
+      "text":{
+         "type":"plain_text",
+         "emoji":true,
+         "text":"Looks like you want to run a command on one of your servers:"
+      }
+   },
+   {
+      "type":"divider"
+   },
+   {
+      "type":"section",
+      "text":{
+         "type":"mrkdwn",
+         "text":"Choose a server"
+      },
+      "accessory":{
+         "type":"static_select",
+         "placeholder":{
+            "type":"plain_text",
+            "text":"Select a server",
+            "emoji":true
+         },
+         "options":[
+            
+         ],
+         "action_id":"command_run_select_server"
+      }
+   },
+   {
+      "type":"input",
+      "element":{
+         "type":"plain_text_input",
+         "multiline":true,
+         "action_id":"command_run_input_command"
+      },
+      "label":{
+         "type":"plain_text",
+         "text":"The command to run",
+         "emoji":true
+      }
+   },
+   {
+      "type":"actions",
+      "elements":[
+         {
+            "type":"button",
+            "text":{
+               "type":"plain_text",
+               "text":"Run"
+            },
+            "style":"primary",
+            "value":"click_me_123",
+            "action_id":"command_run_input_button_confirm"
+         },
+         {
+            "type":"button",
+            "text":{
+               "type":"plain_text",
+               "text":"Cancel",
+               "emoji":true
+            },
+            "style":"danger",
+            "value":"click_me_123",
+            "action_id":"command_run_input_button_cancel"
+         }
+      ]
+   }
+]

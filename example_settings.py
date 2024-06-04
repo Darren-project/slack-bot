@@ -1,0 +1,7 @@
+ts_cid = ""
+ts_cs = ""
+ts_api_oauth_url = ""
+ts_api_url = ""
+cohereapi = ""
+app_token = ""
+bot_token = ""
