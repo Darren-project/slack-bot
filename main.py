@@ -351,7 +351,8 @@ def ai(message, say):
                                            text=text
                                                )
            except SlackApiError as e:
-             retry_after = int(e.response.headers.get('Retry-After', 1))
+             retry_after = int(e.response.headers.get('Retry-After', 1)) + 2
+             print(retry_after)
              time.sleep(retry_after)
              app.client.chat_update(
                                                 channel=data['channel'],
