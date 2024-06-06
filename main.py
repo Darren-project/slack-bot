@@ -88,7 +88,7 @@ allowed_user_ids = ["U05APP82JMR"]
 def servers(ack, respond, command, say):
     # Acknowledge command request
     ack()
-
+#    settings.sjsj
     # only allow certain users to run this command
     if command['user_id'] not in allowed_user_ids:
         data = respond(f"Sorry, you're not allowed to run this command.")
@@ -427,6 +427,14 @@ def ai(message, say):
         print("[AI Chatbot] History saved")
         with open('aihist.json', 'w') as f: json.dump(history, f)
         ai_lock = False
+
+@app.error
+def custom_error_handler(error, body, logger):
+    logger.exception(f"Error: {error}")
+    app.client.chat_postMessage(
+     channel=settings.log_channel,
+     text=f"Error: \n ``` \n {error} \n ```"
+    )
 
 if __name__ == "__main__":
     SocketModeHandler(app, settings.bot_token).start()
