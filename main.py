@@ -6,6 +6,9 @@ import subprocess
 import time
 import cohere
 
+from time import sleep
+from threading import Thread
+
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_bolt import BoltContext, BoltResponse
@@ -31,6 +34,19 @@ class Settings:
 
 # Instantiate the Settings class
 settings = Settings()
+
+# task that runs at a fixed interval
+def ping_task(interval_sec, adapter):
+    # run forever
+    while True:
+        # block for the interval
+        sleep(interval_sec)
+        # perform the task
+        adapter.get_settings()
+        print("[Database Task (Keep Alive)] Pinged the DB")
+
+daemon = Thread(target=ping_task, args=(9,adapter), daemon=True, name='Background')
+daemon.start()
 
 dbset = adapter.get_settings()
 
@@ -346,6 +362,7 @@ def run_command_select_server(ack, body, say, respond):
 @app.message()
 def ai(message, say):
      if message["channel"] == "C075QGP6KAP":
+        print("[AI Chatbot] Sending Request to AI")
         global ai_lock
         if ai_lock:
          return
@@ -366,6 +383,7 @@ def ai(message, say):
                                 )
         text = ""
         tc = 0
+        print("[AI Chatbot] Start streaming")
         for event in response:
          if event.event_type == "text-generation":
            event = event.__dict__
@@ -379,7 +397,7 @@ def ai(message, say):
                                                )
            except SlackApiError as e:
              retry_after = int(e.response.headers.get('Retry-After', 1)) + 2
-             print(retry_after)
+             print("[AI Chatbot] Rate limited for " + str(retry_after) + "s")
              time.sleep(retry_after)
              app.client.chat_update(
                                                 channel=data['channel'],
@@ -388,15 +406,24 @@ def ai(message, say):
                                                                                                                                                                              )
          else:
            pass
-        app.client.chat_update(
+        try:
+           app.client.chat_update(
+                                           channel=data['channel'],
+                                                                              ts=data['ts'],                                                                                                              text=text+" \n --- The End ---")
+        except SlackApiError as e:
+             retry_after = int(e.response.headers.get('Retry-After', 1)) + 2
+             print("[AI Chatbot] Rate limited for " + str(retry_after) + "s")
+             time.sleep(retry_after)
+             app.client.chat_update(
                                            channel=data['channel'],
                                                                               ts=data['ts'],
-                                                                                                                         text=text+" \n --- The End ---"
-                                                                                                                                                                        )
+                               text=text+" \n --- The End ---"
+             )
+        print("[AI Chatbot] End streaming")
         history = ll
         history.append({"role": "USER", "text":  text_in})
         history.append({"role": "CHATBOT", "text": text})
-        
+        print("[AI Chatbot] History saved")
         with open('aihist.json', 'w') as f: json.dump(history, f)
         ai_lock = False
 
