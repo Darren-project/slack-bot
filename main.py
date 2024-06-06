@@ -80,6 +80,11 @@ def get_ts_token():
 # Install the Slack app and get xoxb- token in advance
 app = App(token=settings.app_token)
 
+app.client.chat_postMessage(
+    channel=settings.log_channel,
+    text="A nice new version to have after I wake up" + "\n Version id: " + settings.version
+)
+
 allowed_user_ids = ["U05APP82JMR"]
 
 @app.command("/servers")
