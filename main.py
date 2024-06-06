@@ -1,4 +1,4 @@
-import settings 
+import adapter
 import platform
 import json
 import requests
@@ -10,6 +10,33 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_bolt import BoltContext, BoltResponse
 from slack_sdk.errors import SlackApiError
+
+class Settings:
+    def __init__(self):
+        self._attributes = {}
+
+    def __getattr__(self, name):
+        # If the attribute is not found, return None or raise an AttributeError
+        if name in self._attributes:
+            return self._attributes[name]
+        raise AttributeError(f"'Settings' object has no attribute '{name}'")
+
+    def __setattr__(self, name, value):
+        if name == '_attributes':
+            # Directly set the internal _attributes dictionary
+            super().__setattr__(name, value)
+        else:
+            # Set the attribute in the _attributes dictionary
+            self._attributes[name] = value
+
+# Instantiate the Settings class
+settings = Settings()
+
+dbset = adapter.get_settings()
+
+for key in dbset:
+    setattr(settings, key, dbset[key])
+
 
 co = cohere.Client(settings.cohereapi)
 
