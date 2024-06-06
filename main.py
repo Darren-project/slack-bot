@@ -67,6 +67,7 @@ run_command_state = {
 ai_lock = False
 
 def get_ts_token():
+    print("[Tailscale] Requested new access token")
     import requests
     import json
     data = {
@@ -85,8 +86,6 @@ allowed_user_ids = ["U05APP82JMR"]
 def servers(ack, respond, command, say):
     # Acknowledge command request
     ack()
-
-    
 
     # only allow certain users to run this command
     if command['user_id'] not in allowed_user_ids:
