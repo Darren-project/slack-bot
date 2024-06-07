@@ -18,12 +18,4 @@ def get_settings():
       temp[i[0]] = i[1]
    return temp
 
-def get_stat():
-   notcorrect = conn.execute("select * from history").fetchall()
-   temp = {}
-   for i in notcorrect:
-      temp[i[0]] = i[1]
-   return temp
 
-def set_stat(feat, value):
-   conn.execute("INSERT OR REPLACE INTO history (feature, usage) VALUES ('" + feat + "','" + value + "');")
