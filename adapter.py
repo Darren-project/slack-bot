@@ -26,4 +26,20 @@ def get_stat():
    return temp
 
 def set_stat(feat, value):
+#   conn.commit()
    conn.execute("INSERT OR REPLACE INTO history (feature, usage) VALUES ('" + feat + "','" + value + "');")
+   conn.commit()
+   conn.execute("END TRANSACTION;")
+
+def increment_stat(feat):
+    # Fetch the current statistics
+    stats = get_stat()
+
+    # Get the current value of the feature, defaulting to 0 if it does not exist
+    current_value = stats.get(feat, 0)
+
+    # Increment the value
+    new_value = int(current_value) + 1
+
+    # Update the table with the new value
+    set_stat(feat, str(new_value))

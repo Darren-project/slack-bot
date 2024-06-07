@@ -93,6 +93,8 @@ def servers(ack, respond, command, say):
     if command['user_id'] not in allowed_user_ids:
         data = respond(f"Sorry, you're not allowed to run this command.")
         return
+    command_name = command['command']
+    adapter.increment_stat(command_name)
     data = say("Loading data from Tailscale API...")
     token = get_ts_token()
     headers = {
@@ -184,6 +186,8 @@ def dns(ack, respond, command, say):
     if command['user_id'] not in allowed_user_ids:
         data = respond(f"Sorry, you're not allowed to run this command.")
         return
+    command_name = command['command']
+    adapter.increment_stat(command_name)
     data = say("Loading data from Tailscale API...")
     token = get_ts_token()
     headers = {
@@ -212,6 +216,8 @@ def run_command(ack, respond, command, say):
    if run_command_state["engaged"]:
         data = respond(f"Sorry, you can't run this while another is still running.")
         return
+   command_name = command['command']
+   adapter.increment_stat(command_name)
    data = say("Loading data from Tailscale API...")
    run_command_state["engaged"] = True
    token = get_ts_token()
@@ -368,6 +374,8 @@ def ai(message, say):
         if ai_lock:
          return
         ai_lock = True
+        command_name = "ai_chat"
+        adapter.increment_stat(command_name)
         try:
             ll = json.loads(open("aihist.json").read())
         except:
@@ -427,6 +435,30 @@ def ai(message, say):
         print("[AI Chatbot] History saved")
         with open('aihist.json', 'w') as f: json.dump(history, f)
         ai_lock = False
+
+@app.command("/stats")
+def dns(ack, respond, command, say):
+    # Acknowledge command request
+    ack()
+
+
+    # only allow certain users to run this command
+    if command['user_id'] not in allowed_user_ids:
+        data = respond(f"Sorry, you're not allowed to run this command.")
+        return
+    
+    data = say("Loading data from Database...")
+    stats = adapter.get_stat()
+    text = "Here's all the command and the amount that they are used: \n"
+    for key in stats:
+      text = text + key + " got ran " + str(stats[key]) + " times \n"
+
+    app.client.chat_delete(
+        channel=data['channel'],
+        ts=data['ts']
+    )
+    say(text)
+
 
 @app.error
 def custom_error_handler(error, body, logger):
