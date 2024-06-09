@@ -42,7 +42,8 @@ def ping_task(interval_sec, adapter):
         # block for the interval
         sleep(interval_sec)
         # perform the task
-        adapter.get_settings()
+        global settings
+        settings = adapter.get_settings()
         print("[Database Task (Keep Alive)] Pinged the DB")
 
 daemon = Thread(target=ping_task, args=(9,adapter), daemon=True, name='Background')
@@ -54,7 +55,7 @@ for key in dbset:
     setattr(settings, key, dbset[key])
 
 
-co = cohere.Client(settings.cohereapi)
+co = cohere.Client(api_key=settings.cohereapi, api_url=settings.cohere_url)
 
 run_command_state = {
   "engaged": False,
