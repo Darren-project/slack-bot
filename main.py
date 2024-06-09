@@ -43,7 +43,9 @@ def ping_task(interval_sec, adapter):
         sleep(interval_sec)
         # perform the task
         global settings
-        settings = adapter.get_settings()
+        dbset = adapter.get_settings()
+        for key in dbset:
+          setattr(settings, key, dbset[key])
         print("[Database Task (Keep Alive)] Pinged the DB")
 
 daemon = Thread(target=ping_task, args=(9,adapter), daemon=True, name='Background')
