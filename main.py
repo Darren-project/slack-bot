@@ -6,6 +6,8 @@ import requests
 import subprocess
 import time
 import cohere
+import os
+import tailscale
 
 from time import sleep
 from threading import Thread
@@ -58,6 +60,7 @@ dbset = adapter.get_settings()
 for key in dbset:
     setattr(settings, key, dbset[key])
 
+tsapi = tailscale.Tailscale(settings)
 
 co = cohere.Client(api_key=settings.cohereapi, api_url=settings.cohere_url)
 
@@ -70,17 +73,6 @@ run_command_state = {
 }
 
 ai_lock = False
-
-def get_ts_token():
-    print("[Tailscale] Requested new access token")
-    import requests
-    import json
-    data = {
-        'client_id': settings.ts_cid,
-        'client_secret': settings.ts_cs
-    }
-    response = requests.post(settings.ts_api_oauth_url, data=data)
-    return json.loads(response.text)['access_token']
 
 # Install the Slack app and get xoxb- token in advance
 app = App(token=settings.app_token)
@@ -101,11 +93,7 @@ def servers(ack, respond, command, say):
     command_name = command['command']
     adapter.increment_stat(command_name)
     data = say("Loading data from Tailscale API...")
-    token = get_ts_token()
-    headers = {
-        'Authorization': f'Bearer {token}', 
-        'Content-Type': 'application/json'
-    }
+    
     tempb = [
         {
 			"type": "section",
@@ -117,8 +105,7 @@ def servers(ack, respond, command, say):
 		}
     ]
 
-    response = requests.get(f"{settings.ts_api_url}/tailnet/darrenmc.xyz/devices?fields=all", headers=headers)
-    devices = response.json()
+    devices = tsapi.get_servers()
     tag = ["tag:docker-containers", "tag:servers"]
     for device in devices['devices']:
         trip = True
@@ -194,14 +181,8 @@ def dns(ack, respond, command, say):
     command_name = command['command']
     adapter.increment_stat(command_name)
     data = say("Loading data from Tailscale API...")
-    token = get_ts_token()
-    headers = {
-        'Authorization': f'Bearer {token}',
-        'Content-Type': 'application/json'
-    }
     
-    response = requests.get(f"{settings.ts_api_url}/tailnet/darrenmc.xyz/dns/nameservers", headers=headers)
-    dns = response.json()
+    dns = tsapi.get_dns()
 
     app.client.chat_delete(
         channel=data['channel'],
@@ -225,14 +206,10 @@ def run_command(ack, respond, command, say):
    adapter.increment_stat(command_name)
    data = say("Loading data from Tailscale API...")
    run_command_state["engaged"] = True
-   token = get_ts_token()
-   headers = {
-        'Authorization': f'Bearer {token}', 
-        'Content-Type': 'application/json'
-    }
+  
    servers = {}
-   response = requests.get(f"{settings.ts_api_url}/tailnet/darrenmc.xyz/devices?fields=all", headers=headers)
-   devices = response.json()
+   
+   devices = tsapi.get_servers()
    tag = ["tag:servers"]
    for device in devices['devices']:
         trip = True
@@ -442,7 +419,7 @@ def ai(message, say):
         ai_lock = False
 
 @app.command("/stats")
-def dns(ack, respond, command, say):
+def stats(ack, respond, command, say):
     # Acknowledge command request
     ack()
 
@@ -463,6 +440,23 @@ def dns(ack, respond, command, say):
         ts=data['ts']
     )
     say(text)
+
+@app.command("/restart")
+def stats(ack, respond, command, say):
+    # Acknowledge command request
+    ack()
+
+
+    # only allow certain users to run this command
+    if command['user_id'] not in allowed_user_ids:
+        data = respond(f"Sorry, you're not allowed to run this command.")
+        return
+    command_name = command['command']
+    adapter.increment_stat(command_name)
+    text = "Restarting the bot!"
+    say(text)
+    os.system("systemctl --user restart slack-bot")
+    
 
 
 @app.error
