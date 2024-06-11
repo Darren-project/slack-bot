@@ -44,6 +44,7 @@ def ping_task(interval_sec, adapter):
         sleep(interval_sec)
         # perform the task
         global settings
+        adapter.reconnect()
         dbset = adapter.get_settings()
         for key in dbset:
           setattr(settings, key, dbset[key])
@@ -469,6 +470,8 @@ def custom_error_handler(error, body, logger):
 #    logger.exception(f"Error: {error}")
 #    print(error)
     error = traceback.format_exc()
+    if "Received an invalid baton" in error:
+      adapter.reconnect()
     app.client.chat_postMessage(
      channel=settings.log_channel,
      text=f"Error: \n ``` \n {error} \n ```"
