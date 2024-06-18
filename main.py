@@ -8,7 +8,7 @@ import time
 import cohere
 import os
 import tailscale
-
+import cloudflare
 from time import sleep
 from threading import Thread
 
@@ -61,6 +61,8 @@ for key in dbset:
     setattr(settings, key, dbset[key])
 
 tsapi = tailscale.Tailscale(settings)
+
+cf = cloudflare.Cloudflare(settings)
 
 co = cohere.Client(api_key=settings.cohereapi, api_url=settings.cohere_url)
 
@@ -457,7 +459,20 @@ def stats(ack, respond, command, say):
     say(text)
     os.system("systemctl --user restart slack-bot")
     
-
+@app.command("/whois")
+def whois(ack, respond, command, say):
+    # Acknowledge command request
+    ack()
+    hname = command['text']
+    command_name = command['command']
+    adapter.increment_stat(command_name)
+    data = say("Loading data from Cloudflare API...")
+    data2 = cf.get_whois(hname)
+    app.client.chat_delete(
+        channel=data['channel'],
+        ts=data['ts']
+    )
+    say(f"Whois: \n ``` \n {data2} \n ```")
 
 @app.error
 def custom_error_handler(error, body, logger):
