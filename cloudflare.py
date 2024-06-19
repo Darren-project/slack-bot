@@ -59,7 +59,7 @@ class Cloudflare:
         'Authorization': f'Bearer {self.token}', 
         'Content-Type': 'application/json'
      }
-     response = requests.get(f"{settings.cf_api_url}/zones/{zone_id}/dns_records?content={search_content}", headers=headers)
+     response = requests.get(f"{settings.cf_api_url}/zones/{zone_id}/dns_records?name={search_content}", headers=headers)
      return response.json()
 
   def delete_dns_record(self, zone_id, dns_record_id):

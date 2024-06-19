@@ -1,3 +1,4 @@
+from prettytable import PrettyTable
 import traceback
 import adapter
 import platform
@@ -430,12 +431,15 @@ def stats(ack, respond, command, say):
     if command['user_id'] not in allowed_user_ids:
         data = respond(f"Sorry, you're not allowed to run this command.")
         return
-    
+    table = PrettyTable()
     data = say("Loading data from Database...")
     stats = adapter.get_stat()
     text = "Here's all the command and the amount that they are used: \n"
+    table.field_names = ["Feature", "Usage"]
     for key in stats:
-      text = text + key + " got ran " + str(stats[key]) + " times \n"
+      table.add_row([key, stats[key]])
+
+    text = text + "``` \n" + str(table.get_string()) + "\n ```"
 
     app.client.chat_delete(
         channel=data['channel'],
@@ -473,6 +477,28 @@ def whois(ack, respond, command, say):
         ts=data['ts']
     )
     say(f"Whois: \n ``` \n {data2} \n ```")
+
+@app.command("/find_dns")
+def find_dns(ack, respond, command, say):
+    # Acknowledge command request
+    ack()
+
+
+    # only allow certain users to run this command
+    if command['user_id'] not in allowed_user_ids:
+        data = respond(f"Sorry, you're not allowed to run this command.")
+        return
+    command_name = command['command']
+    hname = command['text']
+    adapter.increment_stat(command_name)
+    data = say("Loading data from Cloudflare API...")
+    data2 = cf.list_dns_record(settings.cf_zone_id, hname)
+    app.client.chat_delete(
+        channel=data['channel'],
+        ts=data['ts']
+    )
+    data = data2["result"][0]
+    
 
 @app.command("/tunnels")
 def tunnels(ack, respond, command, say):
