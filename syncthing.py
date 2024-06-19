@@ -24,4 +24,11 @@ class Syncthing:
      response = requests.get(f"{settings.syncthing_api_url}/noauth/health", headers=headers)
      return response.json()
 
-
+  def get_completion(self,folder_id):
+     settings = self.settings
+     headers = {
+               'Authorization': f'Bearer {self.token}',
+               'Content-Type': 'application/json'
+     }
+     response = requests.get(f"{settings.syncthing_api_url}/db/completion?folder={folder_id}", headers=headers)
+     return response.json()

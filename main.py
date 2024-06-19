@@ -10,8 +10,10 @@ import cohere
 import os
 from tailscale import Tailscale
 from cloudflare import Cloudflare
+from syncthing import Syncthing
 from time import sleep
 from threading import Thread
+import datetime
 
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -65,6 +67,8 @@ tsapi = Tailscale(settings)
 
 cf = Cloudflare(settings)
 
+synct = Syncthing(settings)
+
 co = cohere.Client(api_key=settings.cohereapi, api_url=settings.cohere_url)
 
 run_command_state = {
@@ -82,7 +86,7 @@ app = App(token=settings.app_token)
 
 
 
-allowed_user_ids = ["U05APP82JMR"]
+allowed_user_ids  = settings.allowed_user_id.split(',')
 
 @app.command("/servers")
 def servers(ack, respond, command, say):
@@ -504,6 +508,81 @@ def find_dns(ack, respond, command, say):
     table.add_row([data["id"], data["name"], data["type"], data["content"], data["proxied"], data["ttl"]])
     text = text + "``` \n" + str(table.get_string()) + "\n ```"
     say(text)
+
+@app.command("/syncthing-health")
+def syncthing_health(ack, respond, command, say):
+    # Acknowledge command request
+    ack()
+
+
+    # only allow certain users to run this command
+    if command['user_id'] not in allowed_user_ids:
+        data = respond(f"Sorry, you're not allowed to run this command.")
+        return
+    command_name = command['command']
+    adapter.increment_stat(command_name)
+    data = say("Loading data from Syncthing API...")
+    try:
+      data2 = synct.get_health()
+      app.client.chat_delete(
+          channel=data['channel'],
+          ts=data['ts']
+      )
+      say("Syncthing is up ✅")
+    except:
+      app.client.chat_delete(
+          channel=data['channel'],
+          ts=data['ts']
+      )
+      say("Syncthing is down ❌")
+
+@app.command("/syncthing-status")
+def syncthing_status(ack, respond, command, say):
+    # Acknowledge command request
+    ack()
+
+
+    # only allow certain users to run this command
+    if command['user_id'] not in allowed_user_ids:
+        data = respond(f"Sorry, you're not allowed to run this command.")
+        return
+    command_name = command['command']
+    adapter.increment_stat(command_name)
+    data = say("Loading data from Syncthing API...")
+    data2 = synct.get_status()
+    app.client.chat_delete(
+          channel=data['channel'],
+          ts=data['ts']
+      )
+    id = data2["myID"]
+    uptime = data2["uptime"]
+    uptime = str(datetime.timedelta(seconds=uptime))
+    text = "Here's syncthing's status \n"
+    text = text + "Device ID: "+ id + "\n"
+    text = text + "Uptime: " + str(uptime) + "\n"
+    say(text)
+
+@app.command("/obsidian-synced")
+def obsidian_synced(ack, respond, command, say):
+    # Acknowledge command request
+    ack()
+
+
+    # only allow certain users to run this command
+    if command['user_id'] not in allowed_user_ids:
+        data = respond(f"Sorry, you're not allowed to run this command.")
+        return
+    command_name = command['command']
+    adapter.increment_stat(command_name)
+    data = say("Loading data from Syncthing API...")
+    data2 = synct.get_completion(settings.syncthing_folder_id)
+    app.client.chat_delete(
+          channel=data['channel'],
+          ts=data['ts']
+      )
+    complete = data2["completion"]
+    complete = round(complete,2)
+    say(":obsidian-md:  Notes is " + str(complete) + "% synced.")
 
 @app.command("/tunnels")
 def tunnels(ack, respond, command, say):
