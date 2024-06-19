@@ -478,7 +478,7 @@ def whois(ack, respond, command, say):
     )
     say(f"Whois: \n ``` \n {data2} \n ```")
 
-@app.command("/find_dns")
+@app.command("/dns_find")
 def find_dns(ack, respond, command, say):
     # Acknowledge command request
     ack()
@@ -498,7 +498,12 @@ def find_dns(ack, respond, command, say):
         ts=data['ts']
     )
     data = data2["result"][0]
-    
+    table = PrettyTable()
+    text = "Here's the dns record \n"
+    table.field_names = ["ID", "Name", "Type", "Content", "Proxied", "TLL"]
+    table.add_row([data["id"], data["name"], data["type"], data["content"], data["proxied"], data["ttl"]])
+    text = text + "``` \n" + str(table.get_string()) + "\n ```"
+    say(text)
 
 @app.command("/tunnels")
 def tunnels(ack, respond, command, say):
