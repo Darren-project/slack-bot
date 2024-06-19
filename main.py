@@ -7,8 +7,8 @@ import subprocess
 import time
 import cohere
 import os
-import tailscale
-import cloudflare
+from tailscale import Tailscale
+from cloudflare import Cloudflare
 from time import sleep
 from threading import Thread
 
@@ -60,9 +60,9 @@ dbset = adapter.get_settings()
 for key in dbset:
     setattr(settings, key, dbset[key])
 
-tsapi = tailscale.Tailscale(settings)
+tsapi = Tailscale(settings)
 
-cf = cloudflare.Cloudflare(settings)
+cf = Cloudflare(settings)
 
 co = cohere.Client(api_key=settings.cohereapi, api_url=settings.cohere_url)
 
@@ -444,7 +444,7 @@ def stats(ack, respond, command, say):
     say(text)
 
 @app.command("/restart")
-def stats(ack, respond, command, say):
+def restart(ack, respond, command, say):
     # Acknowledge command request
     ack()
 
@@ -473,6 +473,77 @@ def whois(ack, respond, command, say):
         ts=data['ts']
     )
     say(f"Whois: \n ``` \n {data2} \n ```")
+
+@app.command("/tunnels")
+def tunnels(ack, respond, command, say):
+    # Acknowledge command request
+    ack()
+
+
+    # only allow certain users to run this command
+    if command['user_id'] not in allowed_user_ids:
+        data = respond(f"Sorry, you're not allowed to run this command.")
+        return
+    command_name = command['command']
+    adapter.increment_stat(command_name)
+    data = say("Loading data from Cloudflare API...")
+    data2 = cf.get_cf_tunnels(settings.cf_tunnel_uuid)
+    app.client.chat_delete(
+        channel=data['channel'],
+        ts=data['ts']
+    )
+    true = True
+    slack_block = [
+		{
+			"type": "header",
+			"text": {
+				"type": "plain_text",
+				"text": "Here's the status for the cloudflared tunnel",
+				"emoji": true
+			}
+		},
+		{
+			"type": "context",
+			"elements": [
+				{
+					"type": "plain_text",
+					"text": "Name: " + data2['result'][0]["name"],
+					"emoji": true
+				}
+			]
+		},
+		{
+			"type": "context",
+			"elements": [
+				{
+					"type": "plain_text",
+					"text": "Status: " + data2['result'][0]["status"],
+					"emoji": true
+				}
+			]
+		},
+		{
+			"type": "context",
+			"elements": [
+				{
+					"type": "plain_text",
+					"text": "Active on: " +str(data2['result'][0]["conns_active_at"]),
+					"emoji": true
+				}
+			]
+		},
+		{
+			"type": "context",
+			"elements": [
+				{
+					"type": "plain_text",
+					"text": "Inactive on: " + str(data2['result'][0]["conns_inactive_at"]),
+					"emoji": true
+				}
+			]
+		}
+	]
+    say(blocks=slack_block, text=" ")
 
 @app.error
 def custom_error_handler(error, body, logger):
